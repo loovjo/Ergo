@@ -18,7 +18,7 @@ public class Evaluator {
 	}
 
 	public static boolean isTrue(String exp) {
-		String order = "*V";
+		String order = "*V~";
 		if (exp.startsWith("(") && exp.endsWith(")")) {
 			int level = 0;
 			boolean levelUnderZero = false;
@@ -58,6 +58,8 @@ public class Evaluator {
 						return isTrue(firstPart) && isTrue(secondPart);
 					if (o == 'V')
 						return isTrue(firstPart) || isTrue(secondPart);
+					if (o == '~')
+						return !isTrue(secondPart);
 					return false;
 				}
 			}

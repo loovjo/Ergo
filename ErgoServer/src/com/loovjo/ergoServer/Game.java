@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -102,6 +103,14 @@ public class Game {
 			for (int i = 0; i < 5; i++)
 				p.cards.add(deck.remove(deck.size() - 1));
 		}
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while (true)
+					evaluateCommand(new Scanner(System.in).nextLine());
+			}
+		}).start();
 		while (true) {
 			for (int i = 0; i < players.size(); i++)
 				if (i != turn)
@@ -143,6 +152,13 @@ public class Game {
 		current.send("P");
 
 		String c = current.waitForLine();
+		
+		if (c.startsWith("opcommand ")) {
+			String command = c.substring(c.indexOf(" ") + 1);
+			System.out.println("Command: " + command);
+			evaluateCommand(command);
+			return false;
+		}
 
 		if (c.startsWith("discard ")) {
 			String[] split = c.split(" ");
@@ -170,10 +186,6 @@ public class Game {
 			premises.get(y).add(x, card);
 			current.cards.remove(card);
 		}
-		if (c.startsWith("opcommand ")) {
-			String command = c.split(" ")[1];
-			
-		}
 
 		for (ArrayList<Card> premis : premises) {
 			System.out.println(premis.stream().map(card -> card.getShortName()).collect(Collectors.joining()));
@@ -185,6 +197,19 @@ public class Game {
 					+ (truths.getValue() == 0 ? "False" : truths.getValue() == 1 ? "Unsure" : "True"));
 		}
 		return true;
+	}
+
+	private void evaluateCommand(String command) {
+		if (command.startsWith("kick")) {
+			Player pl = players.stream().filter(player -> player.getName().equals(command.split(" ")[1])).findFirst()
+					.get();
+			pl.send("You got kicked!");
+			players.remove(pl);
+		}
+		if (command.startsWith("giveCard")) {
+			players.stream().filter(player -> player.getName().equals(command.split(" ")[1])).findFirst().get().cards
+					.add(Card.getCardFromSign(command.split(" ")[2]));
+		}
 	}
 
 	public HashMap<String, Integer> getProvenVariables() {

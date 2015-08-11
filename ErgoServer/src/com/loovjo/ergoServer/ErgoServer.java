@@ -19,9 +19,9 @@ public class ErgoServer {
 
 	public static void main(String[] args) throws Exception {
 		/*
-		 * testEvaluator(); testProofs(); System.exit(0);
-		 */
-		
+		testEvaluator();
+		System.exit(0);*/
+
 		System.out.println("Starting server...");
 		ss = new ServerSocket(PORT);
 		System.out.println("Done.");
@@ -84,6 +84,7 @@ public class ErgoServer {
 		System.out.println(Evaluator.isTrue("1V0*1"));
 		System.out.println(Evaluator.isTrue("(1*0V~0)*(1*~0)"));
 		System.out.println(Evaluator.isTrue("1*(1V0)"));
+		System.out.println(Evaluator.isTrue("~1"));
 	}
 
 	public static void start() {
