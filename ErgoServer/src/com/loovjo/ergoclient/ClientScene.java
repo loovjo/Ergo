@@ -70,8 +70,11 @@ public class ClientScene implements Scene, Runnable {
 
 	@Override
 	public void render(Graphics g, int width, int height) {
+		g.setColor(Color.green.darker().darker());
+		g.fillRect(0, 0, width, height);
 		int w = 30;
 		int y = 50;
+		g.setColor(Color.white);
 		
 		g.setFont(new Font("Monospaced", Font.PLAIN, w));
 		g.drawString("Player: " + client.name, 0, w);
@@ -79,7 +82,7 @@ public class ClientScene implements Scene, Runnable {
 		
 		for (int i = 0; i < cards.size(); i++) {
 			int x = (int) (i * (w * 1.1));
-			g.setColor(Color.red);
+			g.setColor(Color.green);
 			g.fillRect(x, y, w, w);
 			g.setColor(Color.black);
 			g.drawString(cards.get(i).getShortName(), x, (int) (y + w * 0.9));
@@ -89,9 +92,9 @@ public class ClientScene implements Scene, Runnable {
 			y += w * 1.1;
 			for (int col = 0; col < board.get(line).size(); col++) {
 				int x = (int) (col * (w * 1.1));
-				g.setColor(Color.red);
+				g.setColor(Color.blue);
 				g.fillRect(x, y, w, w);
-				g.setColor(Color.black);
+				g.setColor(Color.red);
 				g.setFont(new Font("Monospaced", Font.PLAIN, w));
 				g.drawString(board.get(line).get(col).getShortName(), x, (int) (y + w * 0.9));
 			}

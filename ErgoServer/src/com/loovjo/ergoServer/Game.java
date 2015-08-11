@@ -26,11 +26,11 @@ public class Game {
 	public CopyOnWriteArrayList<Player> players;
 	public ServerSocket socket;
 
+	public int subTurn = 0;
 
 	public int turn;
 
 	public ArrayList<ArrayList<Card>> premises = new ArrayList<ArrayList<Card>>(PREMESIS_SIZE);
-
 
 	public ArrayList<Card> deck = new ArrayList<Card>();
 
@@ -107,7 +107,11 @@ public class Game {
 				if (i != turn)
 					sendGameState(players.get(i));
 			if (playTurn()) {
-				turn++;
+				subTurn++;
+				if (subTurn >= 2) {
+					subTurn = 0;
+					turn++;
+				}
 			}
 		}
 	}
@@ -129,49 +133,50 @@ public class Game {
 
 		Player current = players.get(turn % players.size());
 		System.out.println(current + "'s turn.");
-		for (int i = 0; i < 2; i++)
+		while (current.cards.size() < 7 - subTurn)
 			current.cards.add(deck.remove(deck.size() - 1));
 
 		System.out.println("Cards: " + current.cards);
-		
+
 		sendGameState(current);
-		
+
 		current.send("P");
 
-		String[] line = current.waitForLine().split("\\|");
-		if (line.length != 2)
-			return false;
-		for (String c : line) {
-			if (c.startsWith("discard ")) {
-				String[] split = c.split(" ");
-				String cardName = split[1];
-				Card card = null;
-				for (Card carD : current.cards)
-					if (carD.getName().toLowerCase().equals(cardName.toLowerCase())
-							|| carD.getShortName().toLowerCase().equals(cardName.toLowerCase()))
-						card = carD;
-				if (card == null)
-					return false;
-				current.cards.remove(card);
-			} else {
-				String[] split = c.split(",");
-				String cardName = split[0];
-				Card card = null;
-				for (Card carD : current.cards)
-					if (carD.getName().toLowerCase().equals(cardName.toLowerCase())
-							|| carD.getShortName().toLowerCase().equals(cardName.toLowerCase()))
-						card = carD;
-				if (card == null)
-					return false;
-				int y = Integer.parseInt(split[1]);
-				int x = Integer.parseInt(split[2]);
-				premises.get(y).add(x, card);
-				current.cards.remove(card);
-			}
+		String c = current.waitForLine();
+
+		if (c.startsWith("discard ")) {
+			String[] split = c.split(" ");
+			String cardName = split[1];
+			Card card = null;
+			for (Card carD : current.cards)
+				if (carD.getName().toLowerCase().equals(cardName.toLowerCase())
+						|| carD.getShortName().toLowerCase().equals(cardName.toLowerCase()))
+					card = carD;
+			if (card == null)
+				return false;
+			current.cards.remove(card);
+		} else {
+			String[] split = c.split(",");
+			String cardName = split[0];
+			Card card = null;
+			for (Card carD : current.cards)
+				if (carD.getName().toLowerCase().equals(cardName.toLowerCase())
+						|| carD.getShortName().toLowerCase().equals(cardName.toLowerCase()))
+					card = carD;
+			if (card == null)
+				return false;
+			int y = Integer.parseInt(split[1]);
+			int x = Integer.parseInt(split[2]);
+			premises.get(y).add(x, card);
+			current.cards.remove(card);
+		}
+		if (c.startsWith("opcommand ")) {
+			String command = c.split(" ")[1];
+			
 		}
 
 		for (ArrayList<Card> premis : premises) {
-			System.out.println(premis.stream().map(c -> c.getShortName()).collect(Collectors.joining()));
+			System.out.println(premis.stream().map(card -> card.getShortName()).collect(Collectors.joining()));
 		}
 
 		System.out.println("Truth:");
