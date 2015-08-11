@@ -149,10 +149,14 @@ public class Game {
 
 		sendGameState(current);
 
-		current.send("P");
+		for (Player p : players)
+			if (p == current)
+				p.send("P");
+			else
+				p.send("NP");
 
 		String c = current.waitForLine();
-		
+
 		if (c.startsWith("opcommand ")) {
 			String command = c.substring(c.indexOf(" ") + 1);
 			System.out.println("Command: " + command);
@@ -183,7 +187,8 @@ public class Game {
 				return false;
 			int y = Integer.parseInt(split[1]);
 			int x = Integer.parseInt(split[2]);
-			premises.get(y).add(x, card);
+			ArrayList<Card> premesis = premises.get(Math.min(premises.size(), y));
+			premesis.add(Math.min(x, premesis.size()), card);
 			current.cards.remove(card);
 		}
 
@@ -209,6 +214,8 @@ public class Game {
 		if (command.startsWith("giveCard")) {
 			players.stream().filter(player -> player.getName().equals(command.split(" ")[1])).findFirst().get().cards
 					.add(Card.getCardFromSign(command.split(" ")[2]));
+			sendGameState(players.stream().filter(player -> player.getName().equals(command.split(" ")[1])).findFirst()
+					.get());
 		}
 	}
 

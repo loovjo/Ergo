@@ -3,8 +3,10 @@ package com.loovjo.ergoclient;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.swing.JOptionPane;
 
@@ -14,11 +16,23 @@ import com.loovjo.loo2D.utils.Vector;
 
 public class ClientScene implements Scene, Runnable {
 
+	private final int startY = 30;
+	private final int startX = 10;
+	private final int boardY = 80;
+	private final int spaceBetweenCards = 40;
+	private int cardSize = 30;
+
 	public Client client;
 
 	public ArrayList<Card> cards = new ArrayList<Card>();
 
 	public ArrayList<ArrayList<Card>> board = new ArrayList<ArrayList<Card>>();
+
+	public boolean myTurn = false;
+
+	public PlayerCard holding = null;
+
+	public int dragndropSignWidth = 0;
 
 	public ClientScene(Client cl) {
 		this.client = cl;
@@ -38,17 +52,26 @@ public class ClientScene implements Scene, Runnable {
 			String command = client.waitForLine();
 			System.out.println("\t" + client.name);
 			System.out.println(command);
-			
-			if (gs == 2) {
+
+			if (gs == 3) {
+				if (command.equals("P"))
+					myTurn = true;
+				else if (command.equals("NP"))
+					myTurn = false;
 				gs = 0;
+			}
+
+			if (gs == 2) {
+				gs = 3;
 				board.clear();
-				for (int i = 0; i < command.split("\\|").length; i++) {
-					String line = command.split("\\|")[i];
-					System.out.println("Line: \"" + line + "\"");
-					board.add(new ArrayList<Card>());
-					for (char c : line.toCharArray()) {
+				board.add(new ArrayList<Card>());
+				System.out.println("\t" + command + ", " + Arrays.toString(command.split("\\|")));
+				for (char c : command.toCharArray()) {
+					if (c == '|')
+						board.add(new ArrayList<Card>());
+					else
 						board.get(board.size() - 1).add(Card.getCardFromSign(c + ""));
-					}
+
 				}
 				System.out.println(board);
 			}
@@ -70,41 +93,117 @@ public class ClientScene implements Scene, Runnable {
 
 	@Override
 	public void render(Graphics g, int width, int height) {
-		g.setColor(Color.green.darker().darker());
+
+		Color background = Color.green.darker().darker();
+		if (myTurn)
+			background = background.brighter();
+		g.setColor(background);
 		g.fillRect(0, 0, width, height);
-		int w = 30;
-		int y = 50;
+		g.setColor(background.darker());
+		g.fillRect(0, boardY - 10, width, 10);
 		g.setColor(Color.white);
-		
-		g.setFont(new Font("Monospaced", Font.PLAIN, w));
-		g.drawString("Player: " + client.name, 0, w);
-		
-		
+
+		g.setFont(new Font("Monospaced", Font.PLAIN, cardSize));
+		g.drawString("Player: " + client.name, 0, cardSize);
+		for (PlayerCard card : getCardPoses()) {
+			int x = (int) card.getPos().getX();
+			int y = (int) card.getPos().getY();
+			g.setColor(Color.blue);
+			g.fillRect(x, y, cardSize, cardSize);
+			g.setColor(Color.cyan.darker());
+			g.drawRect(x, y, cardSize, cardSize);
+			g.drawRect(x + 1, y + 1, cardSize - 2, cardSize - 2);
+			g.setColor(Color.red);
+			g.setFont(new Font("Monospaced", Font.PLAIN, cardSize));
+			g.drawString(card.getCard().getShortName(), x, (int) (y + cardSize * 0.9));
+		}
+		// Drop 'n' discard box:
+		if (holding != null) {
+			g.setColor(Color.red);
+			g.setFont(new Font("Helvetica", Font.PLAIN, 24));
+			String text = "Drop 'n' discard";
+			dragndropSignWidth = g.getFontMetrics().stringWidth(text);
+			g.fillRoundRect(width - dragndropSignWidth - 3, -3, width, g.getFont().getSize() + 5, 5, 5);
+			g.setColor(g.getColor().darker());
+			g.drawRoundRect(width - dragndropSignWidth - 3, -3, width, g.getFont().getSize() + 5, 5, 5);
+			g.drawString(text, width - dragndropSignWidth, g.getFont().getSize());
+		}
+	}
+
+	public ArrayList<PlayerCard> getCardPoses() {
+		ArrayList<PlayerCard> allCards = new ArrayList<PlayerCard>();
+
+		int y = startY;
+		int x = startX;
+
 		for (int i = 0; i < cards.size(); i++) {
-			int x = (int) (i * (w * 1.1));
-			g.setColor(Color.green);
-			g.fillRect(x, y, w, w);
-			g.setColor(Color.black);
-			g.drawString(cards.get(i).getShortName(), x, (int) (y + w * 0.9));
+			allCards.add(new PlayerCard(cards.get(i), new Vector(x, y)));
+			x += spaceBetweenCards;
 		}
-		y += w;
+		y = boardY;
 		for (int line = 0; line < board.size(); line++) {
-			y += w * 1.1;
+			x = startX;
 			for (int col = 0; col < board.get(line).size(); col++) {
-				int x = (int) (col * (w * 1.1));
-				g.setColor(Color.blue);
-				g.fillRect(x, y, w, w);
-				g.setColor(Color.red);
-				g.setFont(new Font("Monospaced", Font.PLAIN, w));
-				g.drawString(board.get(line).get(col).getShortName(), x, (int) (y + w * 0.9));
+				if (holding != null && line == getHoldingY() && col == getHoldingX())
+					x += spaceBetweenCards;
+				allCards.add(new PlayerCard(board.get(line).get(col), new Vector(x, y)));
+				x += spaceBetweenCards;
 			}
+			y += spaceBetweenCards;
 		}
+		if (holding != null)
+			allCards.add(holding);
+		return allCards;
 	}
 
 	@Override
 	public void mousePressed(Vector pos, int button) {
-		String line = JOptionPane.showInputDialog("What command?");
-		client.send(line);
+		PlayerCard temp = holding;
+		PlayerCard carD = null;
+		for (PlayerCard card : getCardPoses()) {
+			if (card.getPos().getX() < pos.getX() && card.getPos().getX() + cardSize > pos.getX()
+					&& card.getPos().getY() < pos.getY() && card.getPos().getY() + cardSize > pos.getY()) {
+				carD = card;
+			}
+		}
+		holding = carD;
+		if (holding == null || holding == temp) {
+			holding = temp;
+			int cardX = getHoldingX();
+			int cardY = getHoldingY();
+			System.out.println("Row: " + cardX + ", Col: " + cardY);
+			System.out.println(board);
+
+			String send = holding.getCard().getShortName() + "," + cardY + "," + cardX;
+			if (cardX < 0 || cardY < 0) {
+				if (holding.pos.getY() > startY && holding.pos.getY() < startY + cardSize) {
+					cards.add(holding.card);
+					holding = null;
+					return;
+				}
+				send = "discard " + holding.getCard().getShortName();
+			}
+			System.out.println("\t\tCommand: " + send);
+			client.send(send);
+			holding = null;
+		} else {
+			int cardIndex = (int) ((holding.pos.getX() - startX) / spaceBetweenCards);
+			cards.remove(cardIndex);
+
+			holding.pos = pos.sub(new Vector(cardSize, cardSize).div(2));
+
+		}
+
+	}
+
+	private int getHoldingY() {
+		int cardY = Math.round((holding.pos.getY() - boardY) / spaceBetweenCards );
+		return cardY;
+	}
+
+	private int getHoldingX() {
+		int cardX = Math.round((holding.pos.getX() - startX) / spaceBetweenCards);
+		return cardX;
 	}
 
 	@Override
@@ -115,14 +214,16 @@ public class ClientScene implements Scene, Runnable {
 
 	@Override
 	public void mouseMoved(Vector pos) {
-		// TODO Auto-generated method stub
-
+		if (holding != null)
+			holding.pos = pos.sub(new Vector(cardSize, cardSize).div(2));
 	}
 
 	@Override
 	public void keyPressed(int keyCode) {
-		// TODO Auto-generated method stub
-
+		if (keyCode == KeyEvent.VK_SPACE) {
+			String line = JOptionPane.showInputDialog("What command?");
+			client.send(line);
+		}
 	}
 
 	@Override

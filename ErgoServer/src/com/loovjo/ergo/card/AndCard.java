@@ -15,5 +15,6 @@ public class AndCard implements Card {
 	public String toString() {
 		return getClass().getSimpleName();
 	}
+
 	
 }
