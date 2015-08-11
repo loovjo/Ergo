@@ -129,6 +129,7 @@ public class Game {
 
 		Player current = players.get(turn % players.size());
 		System.out.println(current + "'s turn.");
+		System.out.println("Cards: " + current.cards);
 		for (int i = 0; i < 2; i++)
 			current.cards.add(deck.remove(deck.size() - 1));
 		
