@@ -5,8 +5,10 @@ import com.loovjo.loo2D.utils.Vector;
 
 public class PlayerCard {
 	
-	public Card card;
-	public Vector pos;
+	private Card card;
+	private Vector pos;
+	
+	
 	public PlayerCard(Card card, Vector pos) {
 		this.card = card;
 		this.pos = pos;
@@ -14,6 +16,7 @@ public class PlayerCard {
 	public Card getCard() {
 		return card;
 	}
+	
 	public void setCard(Card card) {
 		this.card = card;
 	}

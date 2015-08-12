@@ -33,7 +33,9 @@ public class ClientScene implements Scene, Runnable {
 	public PlayerCard holding = null;
 
 	public int dragndropSignWidth = 0;
-
+	
+	public long lastClick = System.currentTimeMillis();
+	
 	public ClientScene(Client cl) {
 		this.client = cl;
 	}
@@ -158,6 +160,8 @@ public class ClientScene implements Scene, Runnable {
 
 	@Override
 	public void mousePressed(Vector pos, int button) {
+		lastClick = System.currentTimeMillis();
+		
 		PlayerCard temp = holding;
 		PlayerCard carD = null;
 		for (PlayerCard card : getCardPoses()) {
@@ -176,8 +180,8 @@ public class ClientScene implements Scene, Runnable {
 
 			String send = holding.getCard().getShortName() + "," + cardY + "," + cardX;
 			if (cardX < 0 || cardY < 0) {
-				if (holding.pos.getY() > startY && holding.pos.getY() < startY + cardSize) {
-					cards.add(holding.card);
+				if (holding.getPos().getY() > startY && holding.getPos().getY() < startY + cardSize) {
+					cards.add(holding.getCard());
 					holding = null;
 					return;
 				}
@@ -187,35 +191,35 @@ public class ClientScene implements Scene, Runnable {
 			client.send(send);
 			holding = null;
 		} else {
-			int cardIndex = (int) ((holding.pos.getX() - startX) / spaceBetweenCards);
+			int cardIndex = (int) ((holding.getPos().getX() - startX) / spaceBetweenCards);
 			cards.remove(cardIndex);
 
-			holding.pos = pos.sub(new Vector(cardSize, cardSize).div(2));
+			holding.setPos(pos.sub(new Vector(cardSize, cardSize).div(2)));
 
 		}
 
 	}
 
 	private int getHoldingY() {
-		int cardY = Math.round((holding.pos.getY() - boardY) / spaceBetweenCards );
+		int cardY = Math.round((holding.getPos().getY() - boardY) / spaceBetweenCards );
 		return cardY;
 	}
 
 	private int getHoldingX() {
-		int cardX = Math.round((holding.pos.getX() - startX) / spaceBetweenCards);
+		int cardX = Math.round((holding.getPos().getX() - startX) / spaceBetweenCards);
 		return cardX;
 	}
 
 	@Override
 	public void mouseReleased(Vector pos, int button) {
-		// TODO Auto-generated method stub
-
+		if (System.currentTimeMillis() - lastClick > 300)
+			mousePressed(pos, button);
 	}
 
 	@Override
 	public void mouseMoved(Vector pos) {
 		if (holding != null)
-			holding.pos = pos.sub(new Vector(cardSize, cardSize).div(2));
+			holding.setPos(pos.sub(new Vector(cardSize, cardSize).div(2)));
 	}
 
 	@Override
